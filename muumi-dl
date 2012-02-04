@@ -31,9 +31,10 @@ check-yle-dl() {
 
 # strip empty lines and #comments (note verbatim tab)
 sed 's/#.*//; /^[ 	]*$/d;' $muumidl | while read muumihaku hakemisto; do
-	
+
 	# echo info AND set hakemisto to default if not specified
 	echo muumi-dl $muumihaku → ${hakemisto:=~/Desktop}
+	mkdir -p $hakemisto
 	date >> $muumilog
 	
 	# TODO: --resume doesn't work, a bug in yle-dl?
