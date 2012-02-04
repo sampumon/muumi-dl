@@ -1,7 +1,7 @@
 MUUMI-DL
 ========
 
-Download stuff from YLE Areena¹.
+Automatically download stuff from YLE Areena¹.
 
 Downloads the latest episode from given shows. Run daily (or more often) to get all episodes.
 
