@@ -1,0 +1,5 @@
+# Stuff here search URLs from YLE areena. Example below. Format:
+# http://areena.yle.fi/haku//uusimmat/hakusana/search+keyword+s TAB [target_dir=~/Desktop] 
+
+http://areena.yle.fi/haku//uusimmat/hakusana/muumilaakson+tarinoita	~/Desktop/muumit
+http://areena.yle.fi/haku//uusimmat/hakusana/avara+luonto	~/Desktop/avara

@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# VIIMEISIMMÄN MUUMIJAKSON LATAAJA !
+#
+# lukee ladattavat areena-haut tiedostosta muumi-dl.list muodossa:
+# areena-hakusivu	[kohdehakemisto=~/Desktop]
+#
+# OBS: launchd/cron suorittaa tämän esim. päivittäin klo 12?
+# ks. "~/Library/LaunchAgents/fi.sampumon.muumit.plist" (osx) / "crontab -l" (linux)
+
+# points to muumi-dl.list in the same directory where script is
+muumidl=$(dirname $0)/$(readlink $0).list
+
+# TODO: /var/log not writeable
+muumilog=/var/log/muumi-dl.log
+
+yledl=/usr/local/bin/yle-dl
+
+# hmm well "which growlnotify" won't find growl in launchd environment (not in path)
+growlnotify=/usr/local/bin/growlnotify
+[ -x $growlnotify ] || growlnotify=:
+
+# check if yle-dl actually downloaded or if the file was downloaded before
+# display growl notification if have new stuff available
+# reads yle-dl history from $muumilog
+check-yle-dl() {
+	tail $muumilog | grep -q "Not overwriting" && return 1
+	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
+	echo $flv | $growlnotify -n "$0" -I "$flv" "muumi-dl ok ^_^"	
+}
+
+# strip empty lines and #comments (note verbatim tab)
+sed 's/#.*//; /^[ 	]*$/d;' $muumidl | while read muumihaku hakemisto; do
+	
+	# echo info AND set hakemisto to default if not specified
+	echo muumi-dl $muumihaku → ${hakemisto:=~/Desktop}
+	date >> $muumilog
+	
+	# TODO: --resume doesn't work, a bug in yle-dl?
+	$yledl --resume --latestepisode --destdir $hakemisto $muumihaku 2>> $muumilog \
+	&& {
+		check-yle-dl && echo "muumi-dl ok & HAVE NEW STUFF ^_^" || echo "muumi-dl ok (no new stuff)"
+	} || echo "muumi-dl FAIL :/"
+
+done
