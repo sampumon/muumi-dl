@@ -1,46 +1,62 @@
 #!/bin/bash
 #
 # VIIMEISIMMÄN MUUMIJAKSON LATAAJA !
+# DOWNLOAD LATEST MUUMI EPISODE !
 #
-# lukee ladattavat areena-haut tiedostosta muumi-dl.list muodossa:
-# areena-hakusivu	[kohdehakemisto=~/Desktop]
+# usage: muumi-dl [muumi-dl.list]
 #
-# OBS: launchd/cron suorittaa tämän esim. päivittäin klo 12?
-# ks. "~/Library/LaunchAgents/fi.sampumon.muumit.plist" (osx) / "crontab -l" (linux)
+# put downloadable yle areena searches into muumi-dl.list as:
+# areena-search-page	[target_dir = ~/Desktop]
 
-# points to muumi-dl.list in the same directory where script is
-muumidl=$(dirname $0)/$(readlink $0).list
+# get the canonical directory where muumi-dl is
+readlink $0 > /dev/null \
+	&& muumidir=$(dirname $0)/$(dirname $(readlink $0)) \
+	|| muumidir=$(dirname $0)
 
-# TODO: /var/log not writeable
+# by default, muumi-dl.list is in the same directory as script
+[ "$1" ] && muumilist=$1 || muumilist=$muumidir/muumi-dl.list
+
+# NOTE: /var/log is not writeable, if log file is not already presesent just put it to script dir
 muumilog=/var/log/muumi-dl.log
+[ -w $muumilog ] || muumilog=$muumidir/muumi-dl.log
 
+# /usr/local/bin not in path
 yledl=/usr/local/bin/yle-dl
-
-# hmm well "which growlnotify" won't find growl in launchd environment (not in path)
 growlnotify=/usr/local/bin/growlnotify
-[ -x $growlnotify ] || growlnotify=:
 
 # check if yle-dl actually downloaded or if the file was downloaded before
-# display growl notification if have new stuff available
+# if new stuff is available, save it's path to $flv
 # reads yle-dl history from $muumilog
 check-yle-dl() {
 	tail $muumilog | grep -q "Not overwriting" && return 1
 	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
-	echo $flv | $growlnotify -n "$0" -I "$flv" "muumi-dl ok ^_^"	
 }
 
-# strip empty lines and #comments (note verbatim tab)
-sed 's/#.*//; /^[ 	]*$/d;' $muumidl | while read muumihaku hakemisto; do
+# notify a message with title
+# uses growlnotify on OS X and TODO on linux
+# usage: notify "title" "message"
+notify() {
+	title=$1
+	shift
+	echo $title
+	[ -x $growlnotify ] && $growlnotify -n "$0" -m "$@" $title
+}
+
+# DO THE YLE-DL
+
+# strip empty lines and #comments (note verbatim tab in sed expression)
+sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
 
 	# echo info AND set hakemisto to default if not specified
 	echo muumi-dl $muumihaku → ${hakemisto:=~/Desktop}
-	mkdir -p $hakemisto
 	date >> $muumilog
 	
 	# TODO: --resume doesn't work, a bug in yle-dl?
 	$yledl --resume --latestepisode --destdir $hakemisto $muumihaku 2>> $muumilog \
 	&& {
-		check-yle-dl && echo "muumi-dl ok & HAVE NEW STUFF ^_^" || echo "muumi-dl ok (no new stuff)"
-	} || echo "muumi-dl FAIL :/"
+		check-yle-dl \
+			&& notify "muumi-dl ok & HAVE NEW STUFF ^_^" $flv \
+			|| notify "muumi-dl ok (no new stuff)" $muumihaku
+	} || notify "muumi-dl FAIL :/" $muumihaku
 
 done
