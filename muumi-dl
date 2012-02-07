@@ -6,7 +6,7 @@
 # usage: muumi-dl [muumi-dl.list]
 #
 # put downloadable yle areena searches into muumi-dl.list as:
-# areena-search-page	[target_dir = ~/Desktop]
+# areena-search-page	[target_dir=~/Desktop]
 
 # get the canonical directory where muumi-dl is
 readlink $0 > /dev/null \
@@ -32,14 +32,12 @@ check-yle-dl() {
 	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
 }
 
-# notify a message with title
+# notify a message with title (which is also echoed)
 # uses growlnotify on OS X and TODO on linux
-# usage: notify "title" "message"
+# usage: echo "message" | notify "title"
 notify() {
-	title=$1
-	shift
-	echo $title
-	[ -x $growlnotify ] && $growlnotify -n "$0" -m "$@" $title
+	echo $@
+	[ -x $growlnotify ] && $growlnotify -n "$0" $@
 }
 
 # DO THE YLE-DL
@@ -47,16 +45,19 @@ notify() {
 # strip empty lines and #comments (note verbatim tab in sed expression)
 sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
 
-	# echo info AND set hakemisto to default if not specified
-	echo muumi-dl $muumihaku → ${hakemisto:=~/Desktop}
+	[ "$hakemisto" ] || hakemisto=~/Desktop
+	echo "$muumihaku" | notify "muumi-dl getting stuff…"
 	date >> $muumilog
 	
 	# TODO: --resume doesn't work, a bug in yle-dl?
 	$yledl --resume --latestepisode --destdir $hakemisto $muumihaku 2>> $muumilog \
 	&& {
 		check-yle-dl \
-			&& notify "muumi-dl ok & HAVE NEW STUFF ^_^" $flv \
-			|| notify "muumi-dl ok (no new stuff)" $muumihaku
-	} || notify "muumi-dl FAIL :/" $muumihaku
+			&& msg="muumi-dl ok & HAVE NEW STUFF ^_^" \
+			|| msg="muumi-dl ok (no new stuff)"
+	} || msg="muumi-dl FAIL :/"
+
+	# tail the last 2 log lines +an empty line, then double space that
+	tail -3 $muumilog | sed G | notify $msg
 
 done
