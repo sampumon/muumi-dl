@@ -1,6 +1,11 @@
-# Stuff here search URLs from YLE areena. Examples below. Format:
-# http://areena.yle.fi/haku//uusimmat/hakusana/search+keyword+s TAB [target_dir=~/Desktop]
-# NOTE: target_dir has to exist or muumi-dl fails
-
-http://areena.yle.fi/haku//uusimmat/hakusana/muumilaakson+tarinoita	~/Desktop/muumit
-http://areena.yle.fi/haku//uusimmat/hakusana/avara+luonto	~/Desktop/avara
+# Put here search or program URLs from YLE areena. Examples below.
+#
+# Format: areena_url TAB [target_dir]
+# target_dir is ~/Desktop by default and has to exist (or muumi-dl fails)
+#
+# Here some examples (uncomment to get them):
+#
+# http://areena.yle.fi/haku//uusimmat/hakusana/muumilaakson+tarinoita	~/Desktop/muumit
+# http://areena.yle.fi/haku//uusimmat/hakusana/avara+luonto	~/Desktop/avara
+# http://areena.yle.fi/ohjelma/161995	~/Desktop/pasila
+#
