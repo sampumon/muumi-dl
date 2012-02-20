@@ -6,7 +6,7 @@
 	<string>fi.sampumon.muumi-dl</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>~/scripts/muumi-dl</string>
+		<string>/Users/SAMPUMON/scripts/muumi-dl</string>
 	</array>
 	<key>StartCalendarInterval</key>
 	<dict>
