@@ -8,15 +8,26 @@
 # put downloadable yle areena searches into muumi-dl.list as:
 # areena-search-page	[target_dir=~/Desktop]
 
-# get the canonical directory where muumi-dl is
-readlink $0 > /dev/null \
-	&& muumidir=$(dirname $0)/$(dirname $(readlink $0)) \
-	|| muumidir=$(dirname $0)
+quit() {
+	echo "$@"
+	exit 1
+}
+
+# get the canonical directory where muumi-dl is, resolving symlinks
+muumidir-symlink() {
+	readlink $0 > /dev/null \
+		&& muumidir=$(dirname $0)/$(dirname $(readlink $0)) \
+		|| muumidir=$(dirname $0)
+}
+
+# get the canonical directory where muumi-dl is, NOT resolving symlinks
+muumidir=$(dirname $0)
 
 # by default, muumi-dl.list is in the same directory as script
 [ "$1" ] && muumilist=$1 || muumilist=$muumidir/muumi-dl.list
+[ -f "$muumilist" ] || quit "muumi-dl ERROR: $muumilist not found"
 
-# NOTE: /var/log is not writeable, if log file is not already presesent just put it to script dir
+# NOTE: /var/log is not writeable, so if log file is not already presesent just put it to script dir
 muumilog=/var/log/muumi-dl.log
 [ -w $muumilog ] || muumilog=$muumidir/muumi-dl.log
 
@@ -36,8 +47,8 @@ check-yle-dl() {
 # uses growlnotify on OS X and TODO on linux
 # usage: echo "message" | notify "title"
 notify() {
-	echo $@
-	[ -x $growlnotify ] && $growlnotify -n "$0" $@
+	echo "$@"
+	[ -x $growlnotify ] && $growlnotify -n "$0" -d "$muumihaku" "$@"
 }
 
 # DO THE YLE-DL
