@@ -6,19 +6,72 @@
 # usage: muumi-dl [muumi-dl.list]
 #
 # put downloadable yle areena searches into muumi-dl.list as:
-# areena-search-page	[target_dir=~/Desktop]
+# areena-search-url	[target_dir=~/Desktop]
 
+
+#################### HERE ARE OUR FUNCTIONS ####################
+
+# exit with error message (just print it to stdout)
 quit() {
 	echo "$@"
 	exit 1
 }
 
-# get the canonical directory where muumi-dl is, resolving symlinks
+# (deprecated) get the canonical directory where muumi-dl is, resolving symlinks
 muumidir-symlink() {
 	readlink $0 > /dev/null \
 		&& muumidir=$(dirname $0)/$(dirname $(readlink $0)) \
 		|| muumidir=$(dirname $0)
 }
+
+# check if areena is available by downloading robots.txt
+# returns 0 for SUCCESS
+check-for-areena() {
+	curl -fs "areena.yle.fi/robots.txt" > /dev/null
+}
+
+# check if yle-dl actually downloaded or if the file was downloaded before
+# if new stuff is available, save it's path to $flv
+# usage: check-if-new muumi-dl.log
+check-if-new() {
+	tail $1 | grep -q "Not overwriting" && return 1
+	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
+}
+
+# notify a message with title (which is also echoed)
+# uses growlnotify on OS X and TODO on linux
+# usage: echo "message" | notify areena-url "title"
+notify() {
+	url="$1"
+	shift
+	echo "$@"
+	[ -x $growlnotify ] && $growlnotify -n muumi-dl -d $url "$@"
+}
+
+# DO THE YLE DL!
+# downloads the latest episode from given areena page
+# usage: do-yle-dl areena-url destination-dir
+do-yle-dl() {
+	# temp log file for this run
+	muumitemp=$(mktemp -t muumi-dl)
+
+	# default destination to desktop
+	destdir=${2:-~/Desktop}
+
+	echo $1 | notify $1 "muumi-dl getting stuff…"
+
+	# TODO: --resume doesn't work, a bug in yle-dl?
+	# tee inside process substitution so we can use yle-dl exit code
+	$yledl --resume --latestepisode --destdir $destdir $1 2> >(tee $muumitemp >> $muumilog) && {
+		check-if-new $muumitemp && {
+			tail -2 $muumitemp | sed G | notify $1 "muumi-dl ok & HAVE NEW STUFF!"
+		} || {
+			tail -3 $muumitemp | sed G | notify $1 "muumi-dl ok (no new stuff)"
+		}
+	} || tail -4 $muumitemp | sed G | notify $1 "muumi-dl FAIL :/"
+}
+
+#################### THIS IS OUR CONFIGURATION ####################
 
 # get the canonical directory where muumi-dl is, NOT resolving symlinks
 muumidir=$(dirname $0)
@@ -31,44 +84,16 @@ muumidir=$(dirname $0)
 muumilog=/var/log/muumi-dl.log
 [ -w $muumilog ] || muumilog=$muumidir/muumi-dl.log
 
-# /usr/local/bin not in path
+# /usr/local/bin not in launchd environment's path
 yledl=/usr/local/bin/yle-dl
 growlnotify=/usr/local/bin/growlnotify
 
-# check if yle-dl actually downloaded or if the file was downloaded before
-# if new stuff is available, save it's path to $flv
-# reads yle-dl history from $muumilog
-check-yle-dl() {
-	tail $muumilog | grep -q "Not overwriting" && return 1
-	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
-}
-
-# notify a message with title (which is also echoed)
-# uses growlnotify on OS X and TODO on linux
-# usage: echo "message" | notify "title"
-notify() {
-	echo "$@"
-	[ -x $growlnotify ] && $growlnotify -n "$0" -d "$muumihaku" "$@"
-}
-
-# DO THE YLE-DL
+#################### BEGIN MAIN STUFF ####################
 
 # strip empty lines and #comments (note verbatim tab in sed expression)
 sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
 
-	[ "$hakemisto" ] || hakemisto=~/Desktop
-	echo "$muumihaku" | notify "muumi-dl getting stuff…"
-	date >> $muumilog
-	
-	# TODO: --resume doesn't work, a bug in yle-dl?
-	$yledl --resume --latestepisode --destdir $hakemisto $muumihaku 2>> $muumilog \
-	&& {
-		check-yle-dl \
-			&& msg="muumi-dl ok & HAVE NEW STUFF ^_^" \
-			|| msg="muumi-dl ok (no new stuff)"
-	} || msg="muumi-dl FAIL :/"
-
-	# tail the last 2 log lines +an empty line, then double space that
-	tail -3 $muumilog | sed G | notify $msg
+	date >> $muumilog	
+	do-yle-dl "$muumihaku" "$hakemisto"
 
 done
