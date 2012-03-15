@@ -3,9 +3,9 @@
 # Format: areena_url TAB [target_dir]
 # target_dir is ~/Desktop by default and has to exist (or muumi-dl fails)
 #
-# Here some examples (uncomment to get them):
+# As what yle-dl cares, the page pointed to by URL has to have an RSS link for episode listing.
+# All search pages do. Here some examples (uncomment to get these):
 #
 # http://areena.yle.fi/haku//uusimmat/hakusana/muumilaakson+tarinoita	~/Desktop/muumit
 # http://areena.yle.fi/haku//uusimmat/hakusana/avara+luonto	~/Desktop/avara
 # http://areena.yle.fi/ohjelma/161995	~/Desktop/pasila
-#
