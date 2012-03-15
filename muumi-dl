@@ -27,7 +27,6 @@ muumidir-symlink() {
 # check if areena is available by downloading robots.txt
 # returns 0 for SUCCESS
 check-for-areena() {
-	echo debug: check-for-areena
 	curl -fs "areena.yle.fi/robots.txt" > /dev/null
 }
 
@@ -103,10 +102,20 @@ echo "checking for areena.yle.fi" | notify "muumi-dl igniting…"
 sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
 
 	# check for internet twice, then give up
-	check-for-areena || check-for-areena || {
-		echo "muumi-dl can't connect to areena.yle.fi, maybe you have no internet?" \
-			| notify "muumi-dl error :/"
-		exit 2
+	check-for-areena || {
+		notify "muumi-dl still igniting…" <<-TAC
+			Can't connect to areena.yle.fi, maybe you have no internet?
+
+			Trying again in a minute.
+		TAC
+
+		sleep 60
+
+		check-for-areena || {
+			echo "Still can't connect to areena.yle.fi, quitting for the day." \
+				| notify "muumi-dl error :/"
+			exit 2
+		}
 	}
 
 	do-yle-dl "$muumihaku" "$hakemisto"
