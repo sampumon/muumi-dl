@@ -62,6 +62,10 @@ do-yle-dl() {
 	# default destination to desktop
 	destdir=${2:-~/Desktop}
 
+	# create destination directory
+	# NOTE: eval expands possible ~ in $destdir, which strangely is'n expanded here otherwise?
+	eval mkdir -p $destdir
+
 	echo $1 | notify -d $1 "muumi-dl getting stuff…"
 
 	# TODO: --resume doesn't work, a bug in yle-dl?
