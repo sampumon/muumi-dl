@@ -31,15 +31,30 @@ check-for-areena() {
 }
 
 # check if yle-dl actually downloaded or if the file was downloaded before
-# if new stuff is available, save it's path to $flv
+# also if new stuff is available, save it's path to $flv
 # usage: check-if-new muumi-dl.log
+# returns:
+#	0 if have new stuff
+#	1 if already downloaded
+#	2 if yle-dl error
 check-if-new() {
-	tail $1 | grep -q "Not overwriting" && return 1
-	flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
+	grep -q "Stream saved to" $muumitemp && {
+		# yle-dl succesful run...
+		grep -q "Not overwriting" $muumitemp && {
+			# ...but no new stuff
+			return 1
+		}
+
+		# save flv path for later use
+		flv=$(tail $muumilog | grep "Stream saved to " | sed 's/Stream saved to //')
+		return 0
+	}
+
+	return 2
 }
 
 # notify a message with title (which is also echoed)
-# uses growlnotify on OS X and TODO on linux
+# uses growlnotify on OS X and notify-send on Ubuntu
 # usage: echo "message" | notify [-d areena-url] "title"
 notify() {
 	[ "$1" == "-d" ] && {
@@ -49,7 +64,15 @@ notify() {
 
 	echo "$@"
 
-	[ -x $growlnotify ] && $growlnotify -n muumi-dl -d $id "$@"
+	# TODO: maybe check once and use variable later
+	if which growlnotify > /dev/null; then
+		growlnotify -n muumi-dl -d $id "$@"
+	elif which notify-send > /dev/null; then
+		# TODO: can we group notifies by id?
+		notify-send "$@" "$(</dev/stdin)"
+	else # flush stdin
+		cat > /dev/null
+	fi
 }
 
 # DO THE YLE DL!
@@ -57,7 +80,7 @@ notify() {
 # usage: do-yle-dl areena-url destination-dir
 do-yle-dl() {
 	# temp log file for this run
-	muumitemp=$(mktemp -t muumi-dl)
+	muumitemp=$(mktemp -t muumi-dl-XXX)
 
 	# default destination to desktop
 	destdir=${2:-~/Desktop}
@@ -69,8 +92,9 @@ do-yle-dl() {
 	echo $1 | notify -d $1 "muumi-dl getting stuff…"
 
 	# TODO: --resume doesn't work, a bug in yle-dl?
-	# tee inside process substitution so we can use yle-dl exit code
-	$yledl --resume --latestepisode --destdir $destdir $1 2> >(tee $muumitemp >> $muumilog) && {
+	# TODO: yle-dl returns 0 if "ERROR: Failed to change to directory", thus no FAIL is reported
+	# note: tee is inside process substitution so we can use yle-dl exit code
+	yle-dl --resume --latestepisode --destdir $destdir $1 2> >(tee $muumitemp >> $muumilog) && {
 		check-if-new $muumitemp && {
 			tail -2 $muumitemp | sed G | notify -d $1 "muumi-dl ok & HAVE NEW STUFF!"
 		} || {
@@ -78,6 +102,7 @@ do-yle-dl() {
 		}
 	} || tail -4 $muumitemp | sed G | notify -d $1 "muumi-dl FAIL :/"
 }
+
 
 #################### THIS IS OUR CONFIGURATION ####################
 
@@ -92,9 +117,9 @@ muumidir=$(dirname $0)
 muumilog=/var/log/muumi-dl.log
 [ -w $muumilog ] || muumilog=$muumidir/muumi-dl.log
 
-# /usr/local/bin not in launchd environment's path
-yledl=/usr/local/bin/yle-dl
-growlnotify=/usr/local/bin/growlnotify
+# /usr/local/bin is not in launchd environment's path
+export PATH+=:/usr/local/bin
+
 
 #################### BEGIN MAIN STUFF ####################
 
