@@ -25,6 +25,7 @@ muumidir-symlink() {
 }
 
 # check if areena is available by downloading robots.txt
+# TODO: requires curl, maybe switch to wget eller hur
 # returns 0 for SUCCESS
 check-for-areena() {
 	curl -fs "areena.yle.fi/robots.txt" > /dev/null
@@ -86,19 +87,18 @@ do-yle-dl() {
 	destdir=${2:-~/Desktop}
 
 	# create destination directory
-	# NOTE: eval expands possible ~ in $destdir, which strangely is'n expanded here otherwise?
-	eval mkdir -p $destdir
+	mkdir -p $destdir
 
-	echo $1 | notify -d $1 "muumi-dl getting stuff…"
+	echo $1 | notify -d $1 "muumi-dl checking for stuff…"
 
-	# TODO: --resume doesn't work, a bug in yle-dl?
+	# NOTE: --resume works with latest yle-dl (for areena-beta)!
 	# TODO: yle-dl returns 0 if "ERROR: Failed to change to directory", thus no FAIL is reported
 	# note: tee is inside process substitution so we can use yle-dl exit code
 	yle-dl --resume --latestepisode --destdir $destdir $1 2> >(tee $muumitemp >> $muumilog) && {
 		check-if-new $muumitemp && {
-			tail -2 $muumitemp | sed G | notify -d $1 "muumi-dl ok & HAVE NEW STUFF!"
+			tail -2 $muumitemp | sed G | notify -d $1 "muumi-dl HAVE NEW STUFF!"
 		} || {
-			tail -3 $muumitemp | sed G | notify -d $1 "muumi-dl ok (no new stuff)"
+			tail -3 $muumitemp | sed G | notify -d $1 "muumi-dl no new stuff"
 		}
 	} || tail -4 $muumitemp | sed G | notify -d $1 "muumi-dl FAIL :/"
 }
@@ -128,7 +128,11 @@ date >> $muumilog
 echo "checking for areena.yle.fi" | notify "muumi-dl igniting…"
 
 # strip empty lines and #comments (note verbatim tab in sed expression)
-sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
+sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumiurl destdir; do
+
+	# bash-expand possible ~ in $destdir, which otherwise isn't expanded
+	# NOTE: using eval presents a tiny risk of self-inflicted hazardous stuff
+	destdir=$(eval echo $destdir)
 
 	# check for internet twice, then give up
 	check-for-areena || {
@@ -147,6 +151,6 @@ sed 's/#.*//; /^[ 	]*$/d;' $muumilist | while read muumihaku hakemisto; do
 		}
 	}
 
-	do-yle-dl "$muumihaku" "$hakemisto"
+	do-yle-dl "$muumiurl" "$destdir"
 
 done
