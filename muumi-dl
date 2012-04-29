@@ -54,6 +54,16 @@ check-if-new() {
 	return 2
 }
 
+# waits for magic keyword to appear from stdin;
+# send notify if that happens
+# usage: wait-for-incoming areena-url muumi-dl.log &
+# returns if magic happens :>
+wait-for-incoming() {
+	tail -fn0 $2 | grep --line-buffered -q "Starting download at:" \
+		&& echo $1 | notify -d $1 "muumi-dl downloading new stuff!" \
+		|| echo "DEBUG: did not receive new stuff?"
+}
+
 # notify a message (from stdin) & title
 # uses growlnotify on OS X and notify-send on Ubuntu
 # usage: echo "message" | notify [-d areena-url] "title"
@@ -91,8 +101,9 @@ do-yle-dl() {
 	echo $(date) \| $1 | tee -a $muumilog
 	echo $1 | notify -d $1 "muumi-dl checking for stuff…"
 
-	# NOTE: --resume works with latest yle-dl (for areena-beta)!
-	# TODO: yle-dl returns 0 if "ERROR: Failed to change to directory", thus no FAIL is reported
+	# do crazy magic stuff on background
+	wait-for-incoming $1 $muumitemp &
+
 	# note: tee is inside process substitution so we can use yle-dl's exit code
 	yle-dl --resume --latestepisode --destdir $destdir $1 2> >(tee $muumitemp >> $muumilog) && {
 		check-if-new $muumitemp && {
@@ -101,6 +112,8 @@ do-yle-dl() {
 			tail -3 $muumitemp | sed G | notify -d $1 "muumi-dl no new stuff"
 		}
 	} || tail -4 $muumitemp | sed G | notify -d $1 "muumi-dl FAIL :/"
+
+	# TODO: maybe send graceful exit payload for wait-for-incoming?
 }
 
 
