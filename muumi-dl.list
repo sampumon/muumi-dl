@@ -6,6 +6,6 @@
 # As what yle-dl cares, the page pointed to by URL has to have an RSS link for episode listing.
 # All search pages do. Here some examples (uncomment to get these):
 #
-# http://areena-beta.yle.fi/ng/areena?q=muumilaakson+tarinoita	~/Desktop/muumit
-# http://areena-beta.yle.fi/ng/areena?q=avara+luonto&sisalto=ohjelmat	~/Desktop/avara
-# http://areena-beta.yle.fi/ng/areena/tv/1481524	~/Desktop/pasila
+# http://areena.yle.fi/?q=muumilaakson+tarinoita	~/Desktop/muumit
+# http://areena.yle.fi/?q=avara+luonto&media=video	~/Desktop/avara
+# http://areena.yle.fi/tv/1481524	~/Desktop/pasila

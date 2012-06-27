@@ -54,11 +54,12 @@ check-if-new() {
 	return 2
 }
 
-# waits for magic keyword to appear from stdin;
-# send notify if that happens
+# waits for magic keyword to appear from stdin; send notify if that happens
 # usage: wait-for-incoming areena-url muumi-dl.log &
-# returns if magic happens :>
+# returns if magic happens :->
 wait-for-incoming() {
+	# TODO: also notify on download resume
+	# "Resuming download at: 31628.148 kB / 368.240 sec (26.3%)"
 	tail -fn0 $2 | grep --line-buffered -q "Starting download at:" \
 		&& echo $1 | notify -d $1 "muumi-dl downloading new stuff!" \
 		|| echo "DEBUG: did not receive new stuff?"
