@@ -28,7 +28,7 @@ muumidir-symlink() {
 # TODO: requires curl, maybe switch to wget eller hur
 # returns 0 for SUCCESS
 check-for-areena() {
-	curl -fs "areena.yle.fi/robots.txt" > /dev/null
+	curl -fs "areena.yle.fi" > /dev/null
 }
 
 # check if yle-dl actually downloaded or if the file was downloaded before
