@@ -1,11 +1,9 @@
 MUUMI-DL
 ========
 
-Automatically download stuff from YLE Areena¹.
+Automatically download stuff from [YLE Areena][areena].
 
-Downloads the latest episode from given shows. Run daily (or more often) to get all episodes.
-
-¹ http://areena.yle.fi/
+Downloads the latest episode of given shows. Run daily (or more often) to get all episodes.
 
 ## Instructions
 
@@ -29,7 +27,8 @@ Use cron or launchd.
 1. Copy `fi.sampumon.muumi-dl.plist` into `~/Library/LaunchAgents/`.
 2. Modify `ProgramArguments` path in plist to where you installed muumi-dl. Note that you can't use `~`.
 3. Add to launchd: `launchctl load ~/Library/LaunchAgents/fi.sampumon.muumi-dl.plist` (or reboot).
-4. Now muumi-dl runs daily at 12. Start manually anytime: `launchctl start fi.sampumon.muumi-dl`.
+4. Now muumi-dl runs daily at noon. Start manually anytime: `launchctl start fi.sampumon.muumi-dl`.
 
+[areena]:http://areena.yle.fi/
 [yle-dl]:http://users.tkk.fi/~aajanki/rtmpdump-yle/
 [homebrew]:http://github.com/sampumon/homebrew
